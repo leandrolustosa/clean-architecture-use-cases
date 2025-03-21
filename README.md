@@ -1,20 +1,22 @@
 # Projeto com arquitetura limpa, utilizando use cases
 
-Nesse projeto eu fui responsável pela arquitetura e desenvolvimento de toda a estrutura core do código. Eu tomei a decisão de utilizar a arquitetura limpa (Clean Architecture) e Use Case Pattern, pois sabia que tínhamos um tempo muito pequeno para o desenvolvimento, de um projeto muito grande, o modelo de dados possuia mais de 70 tabelas. Para isso idealizei uma arquitetura onde os desenvolvedores, teriam que seguir um passo a passo para implementar cada Caso de Uso.
+![Diagrama da arquitetura](diagrama-arquitetura-use-case.png)
 
-Acredito que o grande ganho que tivemos nesse projeto, foi de fato a velocidade com que construímos, muito ajudados pela arquitetura e pelo baixo índice de retrabalho, isso foi decorrente do Use Case Pattern. Esse padrão exige que cada caso de uso seja implementado em uma classe e que cada classe apenas tenha um método público. Dessa forma uma vez que o caso de uso era entregue, poucas vezes precisávamos revisá-lo, a não quando havia alterações nas regras de negócio, mas que ocorria poucas vezes.
+Neste projeto, fui responsável pela arquitetura e desenvolvimento da estrutura central do código. Diante do desafio de um projeto extenso com mais de 70 tabelas e um prazo de desenvolvimento curto, optei pela Arquitetura Limpa (Clean Architecture) e pelo padrão Use Case. Para otimizar o processo, idealizei uma arquitetura que orientasse os desenvolvedores por meio de um fluxo estruturado na implementação de cada Casos de Uso.
 
-O código do projeto não está em sua plenitude aqui, eu fiz um recorte para apresentar um pouco da arquitetura como um todo.
+Acredito que o principal ganho deste projeto foi a velocidade de desenvolvimento, impulsionada pela arquitetura e pela redução significativa do retrabalho, resultado da adoção do padrão Use Case. Este padrão exige a implementação de cada caso de uso em uma classe com um único método público, o que minimizou a necessidade de revisões, exceto em casos de alterações nas regras de negócio, que foram infrequentes.
 
-Agora vou explicar um pouco do código, separado por camada:
+O código apresentado aqui é um recorte do projeto completo, focado em demonstrar a arquitetura geral.
+
+A seguir, apresentarei a estrutura do código, detalhando cada camada:
 
 ## Camada web-api
 
-Nos `Controllers` relacionados a entidades do negócio (`ProcessoOfertaNegociacaoController`), o objetivo é que só houvesse implementação ligada ao próprio negócio, abstraindo ao máximo a parte técnica nas classes bases, aqui nesse caso `AppBaseController` e `GenericBaseController`.
+Os `Controllers` relacionados às entidades de negócio (`ProcessoOfertaNegociacaoController`) foram projetados para conter apenas a implementação da lógica de negócio, abstraindo ao máximo os detalhes técnicos em classes base, como `AppBaseController` e `GenericBaseController`.
 
-Nesse contexto uma classe que é central para abstrair a parte técnica é o `UseCaseFacade` que se utiliza do pattern `Facade` para "esconder" a lógica de resolução das dependências necessárias para a resolução de cada Caso de Uso. Mas eu explicarei melhor essa classe na camada `application`.
+Nesse contexto, a classe `UseCaseFacade` desempenha um papel central na abstração da complexidade técnica. Ela utiliza o padrão Facade para "ocultar" a lógica de resolução das dependências necessárias para cada Caso de Uso. Detalharei essa classe na seção da camada `application`.
 
-Embaixo observamos a simples implementação de todo o CRUD da entidade `ProcessoOfertaNegociacao` pelo seu controller correspondente:
+A seguir, apresento a implementação simplificada das operações CRUD (Criar, Ler, Atualizar e Deletar) para a entidade `ProcessoOfertaNegociacao`, por meio do seu respectivo controller:
 
 ```c#
 [HttpGet]
@@ -48,7 +50,7 @@ public async Task<IActionResult> Obter([FromQuery] ProcessoOfertaNegociacaoLista
 }
 ```
 
-E quando o caso de uso não era uma operação do CRUD, contávamos com o `UseCaseFacade` para criar um caso de uso específico, conforme pode ser visto abaixo:
+Em situações onde os casos de uso não se enquadravam nas operações CRUD convencionais, o UseCaseFacade permitia a implementação de funcionalidades especializadas, ilustradas no seguinte exemplo:
 
 ```c#
 [HttpPost]
@@ -87,11 +89,41 @@ public async Task<IActionResult> PermiteInicioNegociacao([FromBody] ListaOfertas
 
 ## Camada application
 
-Quando trabalhamos no desenvolvimento de uma aplicação, temos que dar uma mensagem de sucesso ou de falha cada vez que executamos uma ação, ou caso de uso. Nesse contexto, surge uma decisão a ser tomada, trabalhar com `Exception` a cada erro, falha, ou validação fora do esperado, ou trabalhar com o Result Pattern. Nesse projeto eu tomei a decisão de trabalhar com o Result Pattern, eu acredito que com esse padrão, tenhamos mais controle do que está retornando para o usuário final, também há muitos estudos que defendem que gerar `Exceptions` ao longo do código de forma propositada, gera um overhead grande de performance, mas nem tudo são flores, quando trabalhamos com esse padrão, sempre precisamos tratar se vamos apresentar um `Sucesso` ou um `Erro` para o usuário.
+No desenvolvimento de aplicações, é crucial fornecer feedback claro sobre o resultado de cada ação ou caso de uso, seja ele de sucesso ou falha. Nesse contexto, surge a decisão entre o uso de `Exceptions` para sinalizar erros e validações inesperadas, ou a adoção do padrão Result. Neste projeto, optei pelo padrão Result, pois acredito que ele ofereça maior controle sobre as informações retornadas ao usuário final. Além disso, diversos estudos apontam para o impacto negativo na performance causado pelo uso excessivo de `Exceptions`. No entanto, a implementação do padrão Result exige o tratamento explícito de cenários de sucesso e erro.
 
-Na pasta `use-cases` temos onde ocorre toda a orquestração do sistema, como eu disse anteriormente a classe `UseCaseFacade` abstrai a lógica de resolução das dependências que cada caso de uso necessita, utilizando para isso outra importante classe nesse cenário a `UseCaseManager`, para gerir o container de dependências, utilizamos a biblioteca `Autofac` que possui recursos poderosos para entregar as dependências certas, para cenários complexos.
+Na pasta `use-cases`, reside a lógica de orquestração do sistema. Conforme mencionado anteriormente, a classe `UseCaseFacade` abstrai a resolução de dependências para cada caso de uso, utilizando a classe `UseCaseManager` para gerenciar o container de dependências. Para essa gestão, empregamos a biblioteca `Autofac`, que oferece recursos robustos para a injeção precisa de dependências em cenários complexos.
 
-Veja abaixo um exemplo de resolução de dependências:
+A seguir, apresento um exemplo de chamada ao facade:
+
+```c#
+public async Task<ISingleResultDto<TDtoReturn>> ExecuteAuditableAsync<TUseCase, TDto, TDtoReturn>(TDto dto, User user)
+        where TUseCase : IAuditableUseCase<TDto, TDtoReturn>
+        where TDto : AuditableEntityDto
+        where TDtoReturn : EntityDto
+{
+    try
+    {
+        var useCase = manager.ResolveAuditableUseCase<TUseCase, TDto, TDtoReturn>(dto, user);
+        manager.Prepare(useCase, dto, user);
+
+        return await useCase.ExecuteAsync();
+    }
+    catch (TimeoutException ex)
+    {
+        logger.LogError((ex.InnerException != null) ? ex.InnerException.ToString() : ex.ToString());
+
+        return new SingleResultDto<TDtoReturn>(ex);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError((ex.InnerException != null) ? ex.InnerException.ToString() : ex.ToString());
+
+        return new SingleResultDto<TDtoReturn>(ex);
+    }
+}
+```
+
+A seguir, apresento um exemplo de resolução de dependências:
 
 ```c#
 public IAuditableUseCase<TDto, TDtoReturn> ResolveAuditableUseCase<TUseCase, TDto, TDtoReturn>(TDto dto, User user)
@@ -124,13 +156,14 @@ public class ProcessoOfertaNegociacaoIncluirUseCase : AuditableUseCase<ProcessoO
 }
 ```
 
-A linha `container.Resolve<TUseCase>(new TypedParameter(typeof(TDto), dto), new TypedParameter(typeof(User), user));` encontra o caso de uso, injeta no seu construtor os parâmetros `dto` e `user` e os demais parâmetros para instanciar a classe são resolvidos automaticamente pelo `Autofac`.
+A linha de código `container.Resolve<TUseCase>(new TypedParameter(typeof(TDto), dto), new TypedParameter(typeof(User), user))` localiza o caso de uso, injeta os parâmetros `dto` e `user` em seu construtor e resolve automaticamente as demais dependências necessárias para a instanciação da classe, utilizando o `Autofac`.
 
-Outro ponto importante desse projeto, é que um dos requisitos requeria que a grande maioria das entidades de negócio precisariam ter auditoria de todas as operações que ocorresem, por isso, vamos observar uma classe base `AuditableUseCase`.
+Um requisito importante do projeto era a auditoria de todas as operações realizadas nas entidades de negócio. Para isso, implementamos a classe base `AuditableUseCase`.
 
-Essa camada também temos as validações de interface, basicamente valida-se se as informações enviadas estão dentro de um padrão esperado, talvez um campo numérico tenha que ser um número maior do que `ZERO` ou um campo texto não pode ter mais do que `255`caracteres e assim por diante.
+Nesta camada, também realizamos validações de interface, garantindo que os dados recebidos estejam em conformidade com os padrões esperados. Por exemplo, validamos se um campo numérico é maior que zero ou se um campo de texto não excede 255 caracteres.
 
-E por fim a classe `ApplicationModule` registra as dependências dessa camada através da função `RegisterGeneric`, no exemplo abaixo todas as classes que herdam do Use Case x são registradas automaticamente, simplificando muito esse processo.
+Por fim, a classe `ApplicationModule` registra as dependências desta camada por meio da função `RegisterGeneric`. No exemplo abaixo, todas as classes que herdam de `UseCase<T>` são registradas automaticamente, simplificando significativamente o processo.
+
 
 ```c#
 builder.RegisterGeneric(typeof(IncluirUseCase<,>))
@@ -138,20 +171,131 @@ builder.RegisterGeneric(typeof(IncluirUseCase<,>))
             .InstancePerDependency();
 ```
 
-## Camada core
+## Camada Core
 
-Possui classes para lidar com as regras de negócio da aplicação, aqui por exemplo encontramos as classes de validação de negócio.
+Esta camada contém as classes que implementam as regras de negócio da aplicação, incluindo as validações de negócio.
 
-## Camada domain
+Veja abaixo uma classe que implementa uma validação:
 
-São classes representando as entidades de negócio, além dos DTO representando as entidades de negócio, que no final são os objetos que retornam para a interface do usuário.
+```c#
+public class ProcessoOfertaNegociacaoIncluirValidation : EntityValidation<ProcessoOfertaNegociacao, ProcessoOfertaNegociacaoIncluirDto>, IProcessoOfertaNegociacaoIncluirValidation
+{
+    private readonly IProcessoOfertaRepository repositoryOferta;
+    public ProcessoOfertaNegociacaoIncluirValidation(IProcessoOfertaRepository repositoryOferta,
+        IRepository<ProcessoOfertaNegociacao> repository)
+        : base(repository)
+    {
+        this.repositoryOferta = repositoryOferta;
+    }
 
-## Camada infrastructure
+    public override async Task<ISingleResult<ProcessoOfertaNegociacao>> ValidarAsync(ProcessoOfertaNegociacao entity)
+    {
+        var oferta = await repositoryOferta.GetOfertaNegociacaoAsync(entity.IdProcessoOferta);
 
-É a camada de acesso ao banco de dados, aqui eu adotei padrões bem consolidados como `Repository` e `UnitOfWork`, esses patterns além de criarem uma camada de abstração entre as camadas de aplicação e acesso a dados, também abstraem a tecnologia do banco de dados que está por trás da aplicação, curiosamente nesse projeto iniciamos o desenvolvimento com SQL Server, mas o cliente exigiu que a entrega fosse em Oracle, para realizarmos essa virada do ponto de vista da aplicação foi muito simples, com pouquíssimo retrabalho.
+        var possuiOferta = await repositoryOferta.PossuiOfertaPorAberturaAsync(oferta.IdProcessoAbertura);
+        if (possuiOferta)
+        {
+            return new SingleResult<ProcessoOfertaNegociacao>(MensagensNegocio.MSG41);
+        }
 
-Nessa camada também implementamos toda a lógica para obter e salvar todos os dados de auditoria das ações em cada entidade de negócio, toda essa lógica pode ser observada na classe `ApplicationDbContext`.
+        return await Task.Run(() => new SingleResult<ProcessoOfertaNegociacao>());
+    }
+}
+```
 
-## Camada cross-cutting
+## Camada Domain
 
-Como o nome já diz essa camada corta todas as demais camadas, então aqui encontraremos classes para implementar o IoC (Inversion of Control) e DI (Dependency Injection), bem como implementação relacionada a segurança.
+Aqui, encontramos as classes que representam as entidades de negócio, bem como os DTOs (Data Transfer Objects) que definem a estrutura dos dados retornados para a interface do usuário.
+
+Veja abaixo uma classe DTO, que deve ser auditada e o atributo `AuditableEntity` decorando a classe:
+
+```c#
+[AuditableEntity(Acao = Enums.EnumAcao.Inclusao, Funcionalidade = Enums.EnumFuncionalidade.ProcessoNegociacao, Secao = Enums.EnumSecao.Oferta)]
+public class ProcessoOfertaNegociacaoDto : AuditableEntityDto
+{
+    public long NumeroRodada { get; set; }
+    public string OrigemOferta { get; set; }
+    public decimal? ValorTaxaFrete { get; set; }
+    public decimal? ValorTaxaSobreEstadia { get; set; }
+    public decimal? QuantidadeTempoLaytime { get; set; }
+    public decimal? QuantidadeLote { get; set; }
+    public decimal? ValorFinal { get; set; }
+    public decimal? ValorDolarTonelada { get; set; }
+    public bool IndicadorAtivo { get; set; }
+    public decimal? QuantidadeVazaoCarga { get; set; }
+    public decimal? QuantidadeVazaoDescarga { get; set; }
+    public long IdProcessoOferta { get; set; }
+    public EnumUnidadeMedidaSobreEstadia? UnidadeMedidaSobreEstadia { get; set; }
+    public EnumUnidadeMedidaFrete? UnidadeMedidaFrete { get; set; }
+}
+```
+
+## Camada Infrastructure
+
+Esta camada é responsável pelo acesso ao banco de dados. Adotei padrões consolidados como Repository e Unit of Work, que fornecem uma camada de abstração entre a aplicação e o acesso aos dados, além de isolar a tecnologia do banco de dados. Curiosamente, iniciamos o desenvolvimento com SQL Server, mas o cliente solicitou a migração para Oracle. Graças à abstração proporcionada pelos padrões adotados, a transição foi realizada com mínimo retrabalho.
+
+Nesta camada, também implementamos a lógica para registrar e armazenar os dados de auditoria de todas as operações realizadas nas entidades de negócio, centralizada na classe `ApplicationDbContext`.
+
+Veja um trecho de código dessa classe:
+
+```c#
+private Task OnAfterSaveChanges(Guid codigoTransacao, List<AuditEntry> auditEntries)
+{
+    if (auditEntries == null || auditEntries.Count == 0)
+        return Task.CompletedTask;
+
+    foreach (var auditEntry in auditEntries)
+    {
+        // Get the final value of the temporary properties
+        foreach (var property in auditEntry.TemporaryProperties)
+        {
+            string propertyName = auditEntry.GetDisplayName(property.Metadata.Name);
+            var defaultProperty = auditEntry.GetDefaultProperty(property);
+
+            if (property.Metadata.IsPrimaryKey())
+            {
+                SetPrimaryKey(auditEntry, property, defaultProperty, propertyName);
+            }
+            else
+            {
+                auditEntry.NewValues[propertyName] = GetValue(property, property.CurrentValue, defaultProperty.CurrentValue);
+            }
+        }
+
+        // Save the Audit entry
+        LogAcoes.Add(auditEntry.ToLogAcao(codigoTransacao));
+    }
+
+    return SaveChangesAsync();
+}
+```
+
+## Camada Cross-Cutting
+
+Como o nome sugere, esta camada abrange todas as demais camadas, fornecendo funcionalidades transversais. Nela, encontramos as classes responsáveis pela implementação de IoC (Inversion of Control) e DI (Dependency Injection), bem como aspectos relacionados à segurança.
+
+Abaixo a classe de Setup inicial do Autofac:
+
+```c#
+public static class ContainerSetup
+{
+    public static void AutofacInitialization(ContainerBuilder builder, bool isProduction)
+    {
+        var context = new AssemblyLoadContext("IoC");
+                    
+        var applicationAssembly = context.LoadFromAssemblyName(new AssemblyName("application"));
+        var domainAssembly = context.LoadFromAssemblyName(new AssemblyName("domain"));
+        var coreAssembly = context.LoadFromAssemblyName(new AssemblyName("core"));
+        var infrastructureAssembly = context.LoadFromAssemblyName(new AssemblyName("infrastructure"));            
+        var crossCuttingAssembly = Assembly.GetExecutingAssembly();
+
+        builder.RegisterAssemblyTypes(domainAssembly, applicationAssembly, coreAssembly, infrastructureAssembly, crossCuttingAssembly).AsImplementedInterfaces();
+
+        builder.RegisterAssemblyModules(coreAssembly, applicationAssembly, infrastructureAssembly);
+
+        builder.RegisterModule(new CrossCuttingModule() { 
+            IsProduction = isProduction
+        });
+    }
+}
+```
