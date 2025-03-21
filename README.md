@@ -135,7 +135,7 @@ public IAuditableUseCase<TDto, TDtoReturn> ResolveAuditableUseCase<TUseCase, TDt
 }
 ```
 
-Em um cenário de execução se eu tinha um caso de uso `ProcessoOfertaNegociacaoIncluirUseCase` conforme a classe abaixo:
+Abaixo segue exemplo de uma classe do caso de uso Incluir `ProcessoOfertaNegociacaoIncluirUseCase`:
 
 ```c#
 public class ProcessoOfertaNegociacaoIncluirUseCase : AuditableUseCase<ProcessoOfertaNegociacaoIncluirDto>, IProcessoOfertaNegociacaoIncluirUseCase
