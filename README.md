@@ -2,7 +2,7 @@
 
 ![Diagrama da arquitetura](diagrama-arquitetura-use-case.png)
 
-Neste projeto, fui responsável pela arquitetura e desenvolvimento da estrutura central do código. Diante do desafio de um projeto extenso com mais de 70 tabelas e um prazo de desenvolvimento curto, optei pela Arquitetura Limpa (Clean Architecture) e pelo padrão Use Case. Para otimizar o processo, idealizei uma arquitetura que orientasse os desenvolvedores por meio de um fluxo estruturado na implementação de cada Casos de Uso.
+Neste projeto, fui responsável pela arquitetura e desenvolvimento da estrutura central do código. Diante do desafio de um projeto extenso com mais de 70 tabelas e um prazo de desenvolvimento curto, optei pela Arquitetura Limpa (Clean Architecture) e pelo padrão Use Case. Para otimizar o processo, idealizei uma arquitetura que orientasse os desenvolvedores por meio de um fluxo estruturado na implementação de cada Caso de Uso.
 
 Acredito que o principal ganho deste projeto foi a velocidade de desenvolvimento, impulsionada pela arquitetura e pela redução significativa do retrabalho, resultado da adoção do padrão Use Case. Este padrão exige a implementação de cada caso de uso em uma classe com um único método público, o que minimizou a necessidade de revisões, exceto em casos de alterações nas regras de negócio, que foram infrequentes.
 
